@@ -1,0 +1,21 @@
+version: 2.1
+
+jobs:
+  publish:
+    docker:
+      - image: python:3.8.18
+    steps:
+      - checkout
+      - run:
+          name: Publish on GitHub Releases
+          command: |
+            pip install -U pyinstaller
+            pyinstaller script.py
+    filters:
+      tags:
+        only: /^\d+\.\d+\.\d+$/
+
+workflows:
+  publish-workflow:
+    jobs:
+      - publish
