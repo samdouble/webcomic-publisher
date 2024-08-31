@@ -21,10 +21,11 @@ jobs:
       #     pytest
       - name: Build CLI Application
         env:
-          PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           pip install -U poetry
-          poetry publish --username samdouble --password "$PYPI_PASSWORD" --build
+          poetry config pypi-token.pypi "$PYPI_API_TOKEN"
+          poetry publish --build
       # - name: Create GitHub Release
       #   uses: actions/create-release@v1
       #   env:
