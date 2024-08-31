@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  create-release:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,6 +23,7 @@ jobs:
         env:
           PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: |
+          pip install -U poetry
           poetry publish --username samdouble --password "$PYPI_PASSWORD" --build
       # - name: Create GitHub Release
       #   uses: actions/create-release@v1
