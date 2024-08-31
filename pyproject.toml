@@ -2,7 +2,7 @@
 name = "webcomic-publisher"
 version = "0.1.0"
 description = "A CLI for publishing webcomics on the internet"
-authors = ["samdouble <github.com/samdouble>"]
+authors = ["samdouble <samdouble@proton.me>"]
 readme = "README.md"
 
 [tool.poetry.scripts]
