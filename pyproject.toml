@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "webcomic-publisher"
+version = "0.1.0"
+description = "A CLI for publishing webcomics on the internet"
+authors = ["samdouble <github.com/samdouble>"]
+readme = "README.md"
+
+[tool.poetry.scripts]
+webcomic_publisher = "webcomic_publisher.cli:app"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+opencv-python = "^4.10.0.84"
+numpy = "^2.1.0"
+typer = "^0.12.5"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.6.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
