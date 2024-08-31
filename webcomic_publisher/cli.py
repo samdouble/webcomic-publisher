@@ -71,8 +71,8 @@ def run(
     if not formats:
         formats = config["formats"]
 
-    if not os.path.exists("export/" + directory):
-        os.mkdir("export/" + directory)
+    if not os.path.exists(f"{output}/{directory}"):
+        os.mkdir(f"{output}/{directory}")
     for format in formats:
         layout = format["layout"]
         images = (
@@ -160,7 +160,7 @@ def run(
         ] = copyright
 
         cv2.imwrite(
-            "export/" + directory + "/" + layout + ".png",
+            f"{output}/{directory}/{layout}.png",
             outputImage,
             [cv2.IMWRITE_PNG_COMPRESSION, 9],
         )
@@ -175,7 +175,7 @@ def run(
                 interpolation=cv2.INTER_AREA,
             )
             cv2.imwrite(
-                "export/" + directory + "/" + layout + "_" + str(resizeWidth) + ".png",
+                f"{output}/{directory}/{layout}_{str(resizeWidth)}.png",
                 resizedOutputImage,
                 [cv2.IMWRITE_PNG_COMPRESSION, 9],
             )
