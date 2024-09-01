@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "webcomic-publisher"
-version = "0.1.0"
+version = "0.1.4"
 description = "A CLI for publishing webcomics on the internet"
 authors = ["samdouble <samdouble@proton.me>"]
 readme = "README.md"
@@ -25,6 +25,16 @@ select = ["ALL"]
 
 [tool.ruff.pydocstyle]
 convention = "google"
+
+[tool.semantic_release]
+version_toml = [
+    "pyproject.toml:tool.poetry.version"
+]
+major_on_zero = false
+branch = "master"
+# upload_to_PyPI = true
+# upload_to_release = true
+# build_command = "pip install poetry && poetry build"
 
 [build-system]
 requires = ["poetry-core"]
