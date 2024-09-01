@@ -16,6 +16,7 @@ app = typer.Typer(add_completion=False, pretty_exceptions_show_locals=False)
 espace = 30
 bordersize = 8
 
+
 def readConfigFile(filepath):
     f = open(filepath)
     config = json.load(f)
@@ -33,9 +34,7 @@ def scaleImages(images):
     for image in images:
         hauteur, largeur = image.shape[:2]
         facteur = maxhauteur / hauteur
-        res = cv2.resize(
-            image, None, fx=facteur, fy=facteur, interpolation=cv2.INTER_CUBIC
-        )
+        res = cv2.resize(image, None, fx=facteur, fy=facteur, interpolation=cv2.INTER_CUBIC)
         scaledimages.append(res)
     return scaledimages
 
@@ -62,31 +61,24 @@ def getMaxLargeurForLayout(images, layout):
 
 
 @app.command()
-def run(
+def generate(
     directory: Annotated[Optional[Path], typer.Option(file_okay=False, dir_okay=True, help="Source folder path")],
-    output: Annotated[Optional[Path], typer.Option(file_okay=False, dir_okay=True, help="Output folder path")] = "export",
-    formats: Annotated[Optional[str], typer.Option(help="Output formats inside double quotes (e.g.: \"2-2 4\")")] = None,
+    output: Annotated[
+        Optional[Path], typer.Option(file_okay=False, dir_okay=True, help="Output folder path")
+    ] = "export",
+    formats: Annotated[Optional[str], typer.Option(help='Output formats inside double quotes (e.g.: "2-2 4")')] = None,
 ) -> None:
     config = readConfigFile(f"{directory}/config.json")
     if not formats:
         formats = config["formats"]
 
-    if not os.path.exists(f"{output}/{directory}"):
-        os.mkdir(f"{output}/{directory}")
+    output.mkdir(parents=True, exist_ok=True)
     for format in formats:
         layout = format["layout"]
         images = (
-            [
-                cv2.imread(file)
-                for file in sorted(
-                    glob.glob(f"{directory}/{format['subFolder']}/*.png")
-                )
-            ]
+            [cv2.imread(file) for file in sorted(glob.glob(f"{directory}/{format['subFolder']}/*.png"))]
             if "subFolder" in format
-            else [
-                cv2.imread(file)
-                for file in sorted(glob.glob(f"{directory}/*.png"))
-            ]
+            else [cv2.imread(file) for file in sorted(glob.glob(f"{directory}/*.png"))]
         )
         scaledImages = scaleImages(images)
 
@@ -110,9 +102,7 @@ def run(
 
             rescaledRow = []
             for image in sliceImages:
-                res = cv2.resize(
-                    image, None, fx=facteur, fy=facteur, interpolation=cv2.INTER_CUBIC
-                )
+                res = cv2.resize(image, None, fx=facteur, fy=facteur, interpolation=cv2.INTER_CUBIC)
                 rescaledRow.append(res)
 
             rescaledImages.append(rescaledRow)
@@ -129,9 +119,7 @@ def run(
             h = 0
             for image in row:
                 h, l = image.shape[:2]
-                croppedimage = image[
-                    bordersize : h - bordersize, bordersize : l - bordersize
-                ]
+                croppedimage = image[bordersize : h - bordersize, bordersize : l - bordersize]
                 borderimage = cv2.copyMakeBorder(
                     croppedimage,
                     top=bordersize,
@@ -142,25 +130,21 @@ def run(
                     value=[0, 0, 0],
                 )
                 borderimage = np.concatenate((borderimage, np.full((h, l, 1), 255)), axis=2)
-                outputImage[y : y + borderimage.shape[0], x : x + borderimage.shape[1]] = (
-                    borderimage
-                )
+                outputImage[y : y + borderimage.shape[0], x : x + borderimage.shape[1]] = borderimage
                 x += l + espace
             x = 0
             y += h + espace
         copyright = cv2.imread("copyright.png")
         copyright = cv2.resize(copyright, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
         copyrighth, copyrightl = copyright.shape[:2]
-        copyright = np.concatenate(
-            (copyright, np.full((copyrighth, copyrightl, 1), 255)), axis=2
-        )
+        copyright = np.concatenate((copyright, np.full((copyrighth, copyrightl, 1), 255)), axis=2)
         outputImage[
             hauteurImage - copyrighth - bordersize : hauteurImage - bordersize,
             largeurImage - copyrightl - bordersize : largeurImage - bordersize,
         ] = copyright
 
         cv2.imwrite(
-            f"{output}/{directory}/{layout}.png",
+            f"{output}/{layout}.png",
             outputImage,
             [cv2.IMWRITE_PNG_COMPRESSION, 9],
         )
@@ -175,7 +159,7 @@ def run(
                 interpolation=cv2.INTER_AREA,
             )
             cv2.imwrite(
-                f"{output}/{directory}/{layout}_{str(resizeWidth)}.png",
+                f"{output}/{layout}_{str(resizeWidth)}.png",
                 resizedOutputImage,
                 [cv2.IMWRITE_PNG_COMPRESSION, 9],
             )
