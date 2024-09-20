@@ -1,14 +1,13 @@
-import cv2
 import glob
 import json
 import math
-import numpy as np
-import os
 from pathlib import Path
-import typer
 from typing import Optional
-from typing_extensions import Annotated
 
+import cv2
+import numpy as np
+import typer
+from typing_extensions import Annotated
 
 app = typer.Typer(add_completion=False, pretty_exceptions_show_locals=False)
 
@@ -17,14 +16,14 @@ espace = 30
 bordersize = 8
 
 
-def readConfigFile(filepath):
+def read_config_file(filepath):
     f = open(filepath)
     config = json.load(f)
     f.close()
     return config
 
 
-def scaleImages(images):
+def scale_images(images):
     maxhauteur = 0
     for image in images:
         hauteur, largeur = image.shape[:2]
@@ -60,15 +59,16 @@ def getMaxLargeurForLayout(images, layout):
     return maxlargeur
 
 
-@app.command()
+@app.command(name="generate")
 def generate(
     directory: Annotated[Optional[Path], typer.Option(file_okay=False, dir_okay=True, help="Source folder path")],
     output: Annotated[
-        Optional[Path], typer.Option(file_okay=False, dir_okay=True, help="Output folder path")
+        Optional[Path],
+        typer.Option(file_okay=False, dir_okay=True, help="Output folder path"),
     ] = "export",
     formats: Annotated[Optional[str], typer.Option(help='Output formats inside double quotes (e.g.: "2-2 4")')] = None,
 ) -> None:
-    config = readConfigFile(f"{directory}/config.json")
+    config = read_config_file(f"{directory}/config.json")
     if not formats:
         formats = config["formats"]
 
@@ -80,7 +80,7 @@ def generate(
             if "subFolder" in format
             else [cv2.imread(file) for file in sorted(glob.glob(f"{directory}/*.png"))]
         )
-        scaledImages = scaleImages(images)
+        scaledImages = scale_images(images)
 
         largeurImage = getMaxLargeurForLayout(scaledImages, layout)
 
@@ -113,7 +113,7 @@ def generate(
         largeurImage = math.ceil(largeurImage)
         hauteurImage = math.ceil(hauteurImage)
         # On construit le png final
-        outputImage = np.zeros((hauteurImage, largeurImage, 4), np.uint8)
+        output_image = np.zeros((hauteurImage, largeurImage, 4), np.uint8)
         x = y = 0
         for row in rescaledImages:
             h = 0
@@ -130,7 +130,7 @@ def generate(
                     value=[0, 0, 0],
                 )
                 borderimage = np.concatenate((borderimage, np.full((h, l, 1), 255)), axis=2)
-                outputImage[y : y + borderimage.shape[0], x : x + borderimage.shape[1]] = borderimage
+                output_image[y : y + borderimage.shape[0], x : x + borderimage.shape[1]] = borderimage
                 x += l + espace
             x = 0
             y += h + espace
@@ -138,28 +138,28 @@ def generate(
         copyright = cv2.resize(copyright, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
         copyrighth, copyrightl = copyright.shape[:2]
         copyright = np.concatenate((copyright, np.full((copyrighth, copyrightl, 1), 255)), axis=2)
-        outputImage[
+        output_image[
             hauteurImage - copyrighth - bordersize : hauteurImage - bordersize,
             largeurImage - copyrightl - bordersize : largeurImage - bordersize,
         ] = copyright
 
         cv2.imwrite(
             f"{output}/{layout}.png",
-            outputImage,
+            output_image,
             [cv2.IMWRITE_PNG_COMPRESSION, 9],
         )
 
-        for resizeWidth in format["resizeWidths"]:
-            ratio = resizeWidth / largeurImage
-            resizedOutputImage = cv2.resize(
-                outputImage,
+        for resize_width in format["resizeWidths"]:
+            ratio = resize_width / largeurImage
+            resized_output_image = cv2.resize(
+                output_image,
                 None,
                 fx=ratio,
                 fy=ratio,
                 interpolation=cv2.INTER_AREA,
             )
             cv2.imwrite(
-                f"{output}/{layout}_{str(resizeWidth)}.png",
-                resizedOutputImage,
+                f"{output}/{layout}_{str(resize_width)}.png",
+                resized_output_image,
                 [cv2.IMWRITE_PNG_COMPRESSION, 9],
             )
