@@ -3,7 +3,6 @@ import glob
 import json
 import math
 import numpy as np
-import os
 from pathlib import Path
 import typer
 from typing import Optional
@@ -14,49 +13,55 @@ app = typer.Typer(add_completion=False, pretty_exceptions_show_locals=False)
 
 
 espace = 30
-bordersize = 8
+border_size = 8
 
 
-def readConfigFile(filepath):
+def read_config_file(filepath):
     f = open(filepath)
     config = json.load(f)
     f.close()
     return config
 
 
-def scaleImages(images):
+def scale_images(images):
     maxhauteur = 0
     for image in images:
         hauteur, largeur = image.shape[:2]
         if hauteur > maxhauteur:
             maxhauteur = hauteur
-    scaledimages = []
+    scaled_images = []
     for image in images:
         hauteur, largeur = image.shape[:2]
         facteur = maxhauteur / hauteur
-        res = cv2.resize(image, None, fx=facteur, fy=facteur, interpolation=cv2.INTER_CUBIC)
-        scaledimages.append(res)
-    return scaledimages
+        res = cv2.resize(
+            image,
+            None,
+            fx=facteur,
+            fy=facteur,
+            interpolation=cv2.INTER_CUBIC,
+        )
+        scaled_images.append(res)
+    return scaled_images
 
 
-def getMaxLargeurForLayout(images, layout):
+def get_max_largeur_for_layout(images, layout):
     maxlargeur = 0
-    indexDebut = 0
-    nbsImages = layout.split("-")
-    for nbImages in nbsImages:
-        indexFin = indexDebut + int(nbImages)
-        sliceImages = images[indexDebut:indexFin]
-        largeurEspaces = espace * (len(sliceImages) - 1)
+    index_debut = 0
+    nbs_images = layout.split("-")
+    for nb_images in nbs_images:
+        index_fin = index_debut + int(nb_images)
+        slice_images = images[index_debut:index_fin]
+        largeur_espaces = espace * (len(slice_images) - 1)
         largeur = 0
-        for image in sliceImages:
+        for image in slice_images:
             h, l = image.shape[:2]
             largeur += l
-        largeur += largeurEspaces
+        largeur += largeur_espaces
 
         if largeur > maxlargeur:
             maxlargeur = largeur
 
-        indexDebut = indexFin
+        index_debut = index_fin
     return maxlargeur
 
 
@@ -68,7 +73,7 @@ def generate(
     ] = "export",
     formats: Annotated[Optional[str], typer.Option(help='Output formats inside double quotes (e.g.: "2-2 4")')] = None,
 ) -> None:
-    config = readConfigFile(f"{directory}/config.json")
+    config = read_config_file(f"{directory}/config.json")
     if not formats:
         formats = config["formats"]
 
@@ -80,57 +85,57 @@ def generate(
             if "subFolder" in format
             else [cv2.imread(file) for file in sorted(glob.glob(f"{directory}/*.png"))]
         )
-        scaledImages = scaleImages(images)
+        scaled_images = scale_images(images)
 
-        largeurImage = getMaxLargeurForLayout(scaledImages, layout)
+        largeur_image = get_max_largeur_for_layout(scaled_images, layout)
 
-        hauteurImage = 0
-        indexDebut = 0
-        nbsImages = layout.split("-")
-        rescaledImages = []
+        hauteur_image = 0
+        index_debut = 0
+        nbs_images = layout.split("-")
+        rescaled_images = []
 
-        # On fait la matrice d'images rescaledImages
-        for nbImages in nbsImages:
-            indexFin = indexDebut + int(nbImages)
-            sliceImages = scaledImages[indexDebut:indexFin]
-            largeurEspaces = espace * (len(sliceImages) - 1)
+        # On fait la matrice d'images rescaled_images
+        for nb_images in nbs_images:
+            index_fin = index_debut + int(nb_images)
+            slice_images = scaled_images[index_debut:index_fin]
+            largeur_espaces = espace * (len(slice_images) - 1)
             largeur = 0
-            for image in sliceImages:
+            for image in slice_images:
                 h, l = image.shape[:2]
                 largeur += l
-            facteur = (largeurImage - largeurEspaces) / largeur
+            facteur = (largeur_image - largeur_espaces) / largeur
 
-            rescaledRow = []
-            for image in sliceImages:
+            rescaled_row = []
+            for image in slice_images:
                 res = cv2.resize(image, None, fx=facteur, fy=facteur, interpolation=cv2.INTER_CUBIC)
-                rescaledRow.append(res)
+                rescaled_row.append(res)
 
-            rescaledImages.append(rescaledRow)
-            hauteurImage += sliceImages[0].shape[0] * facteur
-            indexDebut = indexFin
-        hauteurImage += espace * (len(rescaledImages) - 1)
+            rescaled_images.append(rescaled_row)
+            hauteur_image += slice_images[0].shape[0] * facteur
+            index_debut = index_fin
+        hauteur_image += espace * (len(rescaled_images) - 1)
 
-        largeurImage = math.ceil(largeurImage)
-        hauteurImage = math.ceil(hauteurImage)
+        largeur_image = math.ceil(largeur_image)
+        hauteur_image = math.ceil(hauteur_image)
         # On construit le png final
-        outputImage = np.zeros((hauteurImage, largeurImage, 4), np.uint8)
+        output_image = np.zeros((hauteur_image, largeur_image, 4), np.uint8)
         x = y = 0
-        for row in rescaledImages:
+        for row in rescaled_images:
             h = 0
             for image in row:
                 h, l = image.shape[:2]
-                croppedimage = image[bordersize : h - bordersize, bordersize : l - bordersize]
-                borderimage = cv2.copyMakeBorder(
-                    croppedimage,
-                    top=bordersize,
-                    bottom=bordersize,
-                    left=bordersize,
-                    right=bordersize,
+                cropped_image = image[border_size : h - border_size, border_size : l - border_size]
+                border_image = cv2.copyMakeBorder(
+                    cropped_image,
+                    top=border_size,
+                    bottom=border_size,
+                    left=border_size,
+                    right=border_size,
                     borderType=cv2.BORDER_CONSTANT,
                     value=[0, 0, 0],
                 )
-                borderimage = np.concatenate((borderimage, np.full((h, l, 1), 255)), axis=2)
-                outputImage[y : y + borderimage.shape[0], x : x + borderimage.shape[1]] = borderimage
+                border_image = np.concatenate((border_image, np.full((h, l, 1), 255)), axis=2)
+                output_image[y : y + border_image.shape[0], x : x + border_image.shape[1]] = border_image
                 x += l + espace
             x = 0
             y += h + espace
@@ -138,28 +143,28 @@ def generate(
         copyright = cv2.resize(copyright, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
         copyrighth, copyrightl = copyright.shape[:2]
         copyright = np.concatenate((copyright, np.full((copyrighth, copyrightl, 1), 255)), axis=2)
-        outputImage[
-            hauteurImage - copyrighth - bordersize : hauteurImage - bordersize,
-            largeurImage - copyrightl - bordersize : largeurImage - bordersize,
+        output_image[
+            hauteur_image - copyrighth - border_size : hauteur_image - border_size,
+            largeur_image - copyrightl - border_size : largeur_image - border_size,
         ] = copyright
 
         cv2.imwrite(
             f"{output}/{layout}.png",
-            outputImage,
+            output_image,
             [cv2.IMWRITE_PNG_COMPRESSION, 9],
         )
 
-        for resizeWidth in format["resizeWidths"]:
-            ratio = resizeWidth / largeurImage
-            resizedOutputImage = cv2.resize(
-                outputImage,
+        for resize_width in format["resize_widths"]:
+            ratio = resize_width / largeur_image
+            resized_output_image = cv2.resize(
+                output_image,
                 None,
                 fx=ratio,
                 fy=ratio,
                 interpolation=cv2.INTER_AREA,
             )
             cv2.imwrite(
-                f"{output}/{layout}_{str(resizeWidth)}.png",
-                resizedOutputImage,
+                f"{output}/{layout}_{str(resize_width)}.png",
+                resized_output_image,
                 [cv2.IMWRITE_PNG_COMPRESSION, 9],
             )
